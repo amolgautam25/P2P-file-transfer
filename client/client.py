@@ -130,7 +130,8 @@ c_Socket.connect((HOST, PORT))
 print('connected to server')
 c_hostname = c_Socket.getsockname()
 c_port = 60000 + random.randint(1, 1001)
-
+data = pickle.dumps([c_port])
+c_Socket.send(data)
 
 
 
@@ -168,6 +169,7 @@ while 1:
             info_add = pickle.dumps([client_message_1], -1)
             c_Socket.send(info_add)
 
+            print("Waiting for a response")
             # Receive the response from server and print the same
             response_received = c_Socket.recv(1024)
             print("ADD Response sent from the server")

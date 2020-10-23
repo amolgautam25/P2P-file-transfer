@@ -1,1 +1,2 @@
 Need to figure out the params to each function
+change the request errors
