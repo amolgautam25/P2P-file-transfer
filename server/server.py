@@ -9,6 +9,7 @@ PORT = 7734  # Port to listen on (non-privileged ports are > 1023)
 
 # Bind the port to the given port number
 ssocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+ssocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 ssocket.bind((HOST, PORT))
 ssocket.listen(5)
 
@@ -72,6 +73,44 @@ def connection_handler(connectionsocket, addr):
                 else:
                     message = "400 Bad Request\r\n"
                     connectionsocket.send(message)
+            elif message_list[0][0]=="L" and message_list[0][1]=="I":
+                split_data = message_list[0].split('\r\n')
+                # Check for BAD REQUEST case
+                if len(split_data) == 4 and "LIST ALL " in split_data[0] and "Host: " in split_data[1] and "Port: " in \
+                        split_data[2]:
+                    p2p_version = split_data[0][split_data[0].find(" P") + 1:]
+                    # Check for VERSION NOT SUPPORTED case
+                    # If proper then reply with the list of RFC and their peer information
+                    if p2p_version == 'P2P-CI/1.0':
+                        # Retrieve information from request
+                        client_host_name = split_data[1][split_data[1].find("Host: ") + 6:]
+                        client_port_number = split_data[2][split_data[2].find("Port: ") + 6:]
+                        # Reply to the request by sending the response to client
+                        message=""
+                        if len(list_of_peers)==0:
+                            message = "P2P-CI/1.0 404 Not Found\r\n"
+                        else:
+                            message = "P2P-CI/1.0 200 OK"
+                            print ("LIST OF PEERS ---- " ,list_of_peers)
+                            print ("Current peers -----",current_peers)
+                            for rfc,value in list_of_peers.items():
+                                rfc_host_list = list_of_peers[rfc]
+                                print("RFC HOST LIST " ,rfc_host_list)
+                                for host in rfc_host_list:
+                                    temp = "rfc " + str(rfc) + " " + str(rfc_list.get(rfc)) + " " + str(
+                                        value) + " " + str(current_peers.get(host))
+                                    message = message + "\r\n" + temp
+                            message = message + "\r\n"
+                        message_bytes=bytes(message,'utf-8')
+                        connectionsocket.send(message_bytes)
+                    else:
+                        message = "505 P2P-CI Version Not Supported\r\n"
+                        message_bytes = bytes(message, 'utf-8')
+                        connectionsocket.send(message_bytes)
+                else:
+                    message = "400 Bad Request\r\n"
+                    message_bytes = bytes(message, 'utf-8')
+                    connectionsocket.send(message_bytes)
         connectionsocket.close()
 
 

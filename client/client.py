@@ -190,10 +190,17 @@ while 1:
     #LIST
     if user_input == "3":
         client_message_1=list_request()
-        print(client_message_1)
         # form a request to be sent to the server
-        encoded_bytes = client_message_1.encode('utf-8')
-        c_Socket.sendall(encoded_bytes)
+        print("LIST Request to be sent to the server")
+        print(client_message_1)
+        info_add = pickle.dumps([client_message_1], -1)
+        c_Socket.send(info_add)
+
+        print("Waiting for a response")
+        # Receive the response from server and print the same
+        response_received = c_Socket.recv(1024)
+        print("ADD Response sent from the server")
+        print(response_received)
         pass
 
     #lookup
