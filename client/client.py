@@ -153,7 +153,7 @@ for file_name in os.listdir(rfc_storage_path):
         print (info_add)
 
 while 1:
-    user_input = input("Select one of the following : 1 ADD\n 2 GET\n 3 LIST\n 4 LOOKUP\n 5 EXIT\n")
+    user_input = input("Select one of the following : \n 1 ADD\n 2 GET\n 3 LIST\n 4 LOOKUP\n 5 EXIT\n")
 
     #ADD
     if user_input == "1":
@@ -199,7 +199,7 @@ while 1:
         print("Waiting for a response")
         # Receive the response from server and print the same
         response_received = c_Socket.recv(1024)
-        print("ADD Response sent from the server")
+        print("LIST Response sent from the server")
         print(response_received)
         pass
 
@@ -209,9 +209,13 @@ while 1:
         rfc_title = input("Enter RFC title")
         client_message_1 = lookup_request(rfc_num, rfc_title)
         print(client_message_1)
-        # form a request to be sent to the server
-        encoded_bytes = client_message_1.encode('utf-8')
-        c_Socket.sendall(encoded_bytes)
+        info_lookup=pickle.dumps([client_message_1],-1)
+        c_Socket.send(info_lookup)
+        print("Waiting for a response")
+        # Receive the response from server and print the same
+        response_received = c_Socket.recv(1024)
+        print("LOOKUP Response sent from the server")
+        print(response_received)
         pass
 
     #EXIT

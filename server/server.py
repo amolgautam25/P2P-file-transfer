@@ -111,6 +111,43 @@ def connection_handler(connectionsocket, addr):
                     message = "400 Bad Request\r\n"
                     message_bytes = bytes(message, 'utf-8')
                     connectionsocket.send(message_bytes)
+            elif message_list[0][0]=="L" and message_list[0][1]=="O":
+                split_data = message_list[0].split('\r\n')
+                # Check for BAD REQUEST case
+                if len(split_data) == 5 and "LOOKUP RFC " in split_data[0] and "Host: " in split_data[1] and "Port: " in \
+                        split_data[2] and "Title: " in split_data[3]:
+                    p2p_version = split_data[0][split_data[0].find(" P") + 1:]
+                    # Check for VERSION NOT SUPPORTED case
+                    # If proper then reply with the requested RFC file information
+                    if p2p_version == 'P2P-CI/1.0':
+                        # Retrieve requested RFC file information from request
+                        rfc_number = split_data[0][split_data[0].find("C ") + 2:split_data[0].find(" P")]
+                        client_host_name = split_data[1][split_data[1].find("Host: ") + 6:]
+                        client_port_number = split_data[2][split_data[2].find("Port: ") + 6:]
+                        rfc_title = split_data[3][split_data[3].find("Title: ") + 7:]
+                        # Reply to the request by sending the RFC file information response to client
+                        if rfc_number in rfc_list and rfc_list[rfc_number] == rfc_title:
+                            message = "P2P-CI/1.0 200 OK"
+                            rfc_host_list = list_of_peers.get(rfc_number)
+                            for host in rfc_host_list:
+                                temp = "RFC " + str(rfc_number) + " " + str(rfc_title) + " " + str(host) + " " + str(
+                                    current_peers.get(host))
+                                message = message + "\r\n" + temp
+                            message = message + "\r\n"
+                            message_bytes = bytes(message, 'utf-8')
+                            connectionsocket.send(message_bytes)
+                        else:
+                            message = "P2P-CI/1.0 404 Not Found\r\n"
+                            message_bytes = bytes(message, 'utf-8')
+                            connectionsocket.send(message_bytes)
+                    else:
+                        message = "505 P2P-CI Version Not Supported\r\n"
+                        message_bytes = bytes(message, 'utf-8')
+                        connectionsocket.send(message_bytes)
+                else:
+                    message = "400 Bad Request\r\n"
+                    message_bytes = bytes(message, 'utf-8')
+                    connectionsocket.send(message_bytes)
         connectionsocket.close()
 
 
