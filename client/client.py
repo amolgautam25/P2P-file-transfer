@@ -7,6 +7,7 @@ import pickle
 import random
 import time
 import platform
+import _thread
 
 HOST = '127.0.0.1'  # The server's hostname or IP address
 PORT = 7734  # The port used by the server
@@ -43,7 +44,7 @@ def list_request():
     return message
 
 
-def upload_thread():
+def connection_handler():
     # Create a upload server socket
     uploadSocket = socket.socket()
     host = '0.0.0.0'
@@ -136,6 +137,7 @@ c_Socket.send(data)
 
 
 #send the initial peer information to the server
+# send_peer_info()
 rfc_numbers=[]
 rfc_titles=[]
 rfc_list_dict={}
@@ -151,6 +153,8 @@ for file_name in os.listdir(rfc_storage_path):
         information_list = [req_message]
         info_add = pickle.dumps(information_list, -1)
         print (info_add)
+
+_thread.start_new_thread(connection_handler,())
 
 while 1:
     user_input = input("Select one of the following : \n 1 ADD\n 2 GET\n 3 LIST\n 4 LOOKUP\n 5 EXIT\n")
@@ -180,13 +184,47 @@ while 1:
     #GET
     if user_input == "2":
         # form a request to be sent to the server
-        client_rfc_num=input("Enter client RFC number")
-        client_message_1=get_request(client_rfc_num)
-        print(client_rfc_num)
-        encoded_bytes = client_message_1.encode('utf-8')
-        c_Socket.sendall(encoded_bytes)
-        pass
+        rfc_num=input("Enter RFC Number\n")
+        rfc_title=input("Enter title\n")
 
+        # Create a LOOKUP request to find the peer holding the requesting RFC. Send it to the server
+        req_message = lookup_request(rfc_num, rfc_title)
+
+        print("LOOKUP Request to be sent to the server for completing the GET request")
+        print(req_message)
+        info_add = pickle.dumps([req_message], -1)
+        c_Socket.sendall(info_add)
+
+        # Receive the LOOKUP response from the server
+        response_received = c_Socket.recv(1024)
+
+        # Based on server response, verify the response for FILE NOT FOUND, BAD REQUEST or WRONG VERSION
+        split_data = response_received.split('\r\n')
+
+        print("LOOKUP Response sent from the server")
+
+        if "404 Not Found" in split_data[0]:
+            print(response_received)
+        elif 'Version Not Supported' in split_data[0]:
+            print(response_received)
+        elif 'Bad Request' in split_data[0]:
+            print(response_received)
+        else:
+            print(response_received)
+
+            # Retrieve the HOSTNAME and PORT NUMBER of the first peer in the response holding the RFC file
+            split_data = split_data[1].split(" ")
+            peer_host_name = split_data[3]
+            peer_port_number = split_data[4]
+
+            # Create the GET request to be sent to the peer
+            req_message = get_request(rfc_num)
+
+            print("GET Request to be sent to the peer holding the RFC File")
+            print(req_message)
+
+            # start a new thread that will do all the handling for sending the GET request and receiving the RFC file from it
+            _thread.start_new_thread(download_thread, (req_message, peer_host_name, peer_port_number, rfc_num))
     #LIST
     if user_input == "3":
         client_message_1=list_request()

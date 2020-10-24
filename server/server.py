@@ -10,7 +10,7 @@ PORT = 7734  # Port to listen on (non-privileged ports are > 1023)
 # Bind the port to the given port number
 ssocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ssocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-ssocket.bind((HOST, PORT))
+ssocket.bind(('', PORT))
 ssocket.listen(5)
 
 print("Server is Up")
@@ -148,6 +148,17 @@ def connection_handler(connectionsocket, addr):
                     message = "400 Bad Request\r\n"
                     message_bytes = bytes(message, 'utf-8')
                     connectionsocket.send(message_bytes)
+        if host_name in current_peers:
+            current_peers.pop(host_name, None)
+        for rfc in list_of_peers:
+            rfc_host_list = list_of_peers.get(rfc)
+            if host_name in rfc_host_list:
+                if len(rfc_host_list) == 1:
+                    rfc_list.pop(rfc, None)
+                    list_of_peers.pop(rfc, None)
+                else:
+                    rfc_host_list.remove(host_name)
+                    list_of_peers[rfc] = rfc_host_list
         connectionsocket.close()
 
 
