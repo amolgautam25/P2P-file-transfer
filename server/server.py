@@ -20,9 +20,12 @@ rfc_list = {}
 current_peers = {}
 
 
+#receives a get request
 def connection_handler(connectionsocket, addr):
         initial_data = pickle.loads(connectionsocket.recv(1024))
         host_name = addr[0] + ":" + str(initial_data[0])
+        print("initial _ data ----->",initial_data)
+        print("Hostname-----" , host_name)
         # Insert the information into data structures
         current_peers[host_name]= initial_data[0]
         # Request received from client for a service
@@ -38,7 +41,7 @@ def connection_handler(connectionsocket, addr):
                 break
             # ADD Request
             elif message_list[0][0] == 'A':
-                print("A started --------")
+                print("Add started --------")
                 split_data = message_list[0].split('\r\n')
                 # Check for BAD REQUEST case
                 if len(split_data) == 5 and "ADD RFC " in split_data[0] and "Host: " in split_data[1] and "Port: " in \
@@ -48,18 +51,24 @@ def connection_handler(connectionsocket, addr):
                     if 'P2P-CI/1.0' in split_data[0]:
                         # Retrieve the newly added RFC file information from request
                         rfc_number = split_data[0][split_data[0].find("C ") + 2:split_data[0].find(" P")]
+                        print("RFC_number---",rfc_number)
                         client_host_name = split_data[1][split_data[1].find("Host: ") + 6:]
+                        print("Client host name----",client_host_name)
                         client_port_number = split_data[2][split_data[2].find("Port: ") + 6:]
+                        print("Client_port_number ----",client_port_number)
                         rfc_title = split_data[3][split_data[3].find("Title: ") + 7:]
+                        print("rfc titile----", rfc_title)
                         p2p_version = split_data[0][split_data[0].find(" P") + 1:]
 
                         # Add the RFC file information into the data structures
+                        cname = client_host_name+":"+client_port_number
+                        print("CNAME:-----",cname)
                         if rfc_number not in rfc_list:
                             rfc_list[rfc_number]= rfc_title
-                            list_of_peers[rfc_number]=[client_host_name]
+                            list_of_peers[rfc_number]=[cname]
                         else:
-                            rfc_host_list=list_of_peers[rfc_number]
-                            rfc_host_list.append(client_host_name)
+                            rfc_host_list=list_of_peers.get(rfc_number)
+                            rfc_host_list.append(cname)
                             list_of_peers[rfc_number]=rfc_host_list
 
                         # Echo back the request with OK response to the client
@@ -91,14 +100,15 @@ def connection_handler(connectionsocket, addr):
                             message = "P2P-CI/1.0 404 Not Found\r\n"
                         else:
                             message = "P2P-CI/1.0 200 OK"
-                            print ("LIST OF PEERS ---- " ,list_of_peers)
+                            print ("LIST OF PEERS -----" ,list_of_peers)
                             print ("Current peers -----",current_peers)
                             for rfc,value in list_of_peers.items():
                                 rfc_host_list = list_of_peers[rfc]
                                 print("RFC HOST LIST " ,rfc_host_list)
                                 for host in rfc_host_list:
-                                    temp = "rfc " + str(rfc) + " " + str(rfc_list.get(rfc)) + " " + str(
-                                        value) + " " + str(current_peers.get(host))
+                                    print("HOST---->",host)
+                                    temp = "rfc " + str(rfc) + " " + str(rfc_list.get(rfc)) + " " +str(host[:host.find(":")])+" "+str(current_peers.get(host))
+
                                     message = message + "\r\n" + temp
                             message = message + "\r\n"
                         message_bytes=bytes(message,'utf-8')
@@ -130,11 +140,14 @@ def connection_handler(connectionsocket, addr):
                             message = "P2P-CI/1.0 200 OK"
                             rfc_host_list = list_of_peers.get(rfc_number)
                             for host in rfc_host_list:
-                                temp = "RFC " + str(rfc_number) + " " + str(rfc_title) + " " + str(host) + " " + str(
-                                    current_peers.get(host))
+                                print("current_peers: ",current_peers)
+                                print ("Host (f)",host)
+                                temp = "RFC " + str(rfc_number) + " " + str(rfc_title) + " " + str(host[:host.find(":")])+" "+str(current_peers.get(host))
+
                                 message = message + "\r\n" + temp
                             message = message + "\r\n"
                             message_bytes = bytes(message, 'utf-8')
+                            print("Message that is sent-----",message_bytes)
                             connectionsocket.send(message_bytes)
                         else:
                             message = "P2P-CI/1.0 404 Not Found\r\n"

@@ -97,7 +97,6 @@ def download_thread(req_message, peer_host_name, peer_port_number, rfc_number):
     # Connect to the upload server socket of the peer holding the required file
     requestPeerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     requestPeerSocket.connect((peer_host_name, int(peer_port_number)))
-
     print("Connection with peer established")
 
     # Send the GET request to the peer
@@ -129,7 +128,7 @@ def download_thread(req_message, peer_host_name, peer_port_number, rfc_number):
 c_Socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 c_Socket.connect((HOST, PORT))
 print('connected to server')
-c_hostname = c_Socket.getsockname()
+c_hostname = c_Socket.getsockname()[0]
 c_port = 60000 + random.randint(1, 1001)
 data = pickle.dumps([c_port])
 c_Socket.send(data)
