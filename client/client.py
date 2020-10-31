@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import socket
-import email
+import email.utils
 import os
 import pickle
 import random
@@ -9,7 +9,7 @@ import time
 import platform
 import _thread
 
-HOST = '127.0.0.1'  # The server's hostname or IP address
+HOST = '192.168.1.207'  # The server's hostname or IP address
 PORT = 7734  # The port used by the server
 
 def add_request(client_rfc_num, client_rfc_title):
@@ -54,7 +54,9 @@ def connection_handler():
         # Accept an incoming request for upload
         downloadSocket, downloadAddress = uploadSocket.accept()
         message = downloadSocket.recv(1024)
-        split_data = message.split('\r\n')
+        print("request message received -----", message)
+        message_string=message.decode('utf-8')
+        split_data = message_string.split("\r\n")
 
         # Check for BAD REQUEST case
         if len(split_data) == 4 and "GET RFC " in split_data[0] and "Host: " in split_data[1] and "OS: " in split_data[
@@ -84,43 +86,53 @@ def connection_handler():
                     reply_message = reply_message + data
 
                     # Send the reply
-                    downloadSocket.sendall(reply_message)
+                    reply_message_bytes=reply_message.encode('utf-8')
+                    downloadSocket.sendall(reply_message_bytes)
             else:
                 reply_message = "505 P2P-CI Version Not Supported\r\n"
-                downloadSocket.send(reply_message)
+                reply_message_bytes = reply_message.encode('utf-8')
+                downloadSocket.send(reply_message_bytes)
         else:
             reply_message = "400 Bad Request\r\n"
-            downloadSocket.send(reply_message)
+            reply_message_bytes = reply_message.encode('utf-8')
+            downloadSocket.send(reply_message_bytes)
 
 
 def download_thread(req_message, peer_host_name, peer_port_number, rfc_number):
+    print ("peer_host_name",peer_host_name)
+    print("peer port number ", peer_port_number)
     # Connect to the upload server socket of the peer holding the required file
     requestPeerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     requestPeerSocket.connect((peer_host_name, int(peer_port_number)))
     print("Connection with peer established")
+    req_message_bytes = req_message.encode('utf-8')
+
+    print("request message sent to client--------", req_message_bytes)
 
     # Send the GET request to the peer
-    requestPeerSocket.sendall(req_message)
+    requestPeerSocket.sendall(req_message_bytes)
 
     # Receive the reply from the peer with the data in it.
     get_reply = ""
     get_reply = requestPeerSocket.recv(1024)
-    if "P2P-CI/1.0 200 OK" in get_reply.split("\r\n")[0]:
+    get_reply_string = get_reply.decode('utf-8')
+    print("get_reply_string ---------------------------------------", get_reply_string)
+    if "P2P-CI/1.0 200 OK" in get_reply_string.split("\r\n")[0]:
         print("P2P-CI/1.0 200 OK")
-        content_line = (get_reply.split("\r\n"))[4]
+        content_line = (get_reply_string.split("\r\n"))[4]
         content_length = int(content_line[content_line.find('Content-Length: ') + 16:])
-        get_reply = get_reply + requestPeerSocket.recv(content_length)
-        rfc_file_path = os.getcwd() + "/RFC/RFC" + rfc_number + ".txt"
-        data = get_reply[get_reply.find('text/plain\r\n') + 12:]
+        get_reply_string = get_reply_string + requestPeerSocket.recv(content_length).decode('utf-8')
+        rfc_file_path = os.getcwd() + "/rfc/rfc" + rfc_number + ".txt"
+        data = get_reply_string[get_reply_string.find('text/plain\r\n') + 12:]
 
         # Writing the file data to a file
         with open(rfc_file_path, 'w') as file:
             file.write(data)
         print("File Received from peer and stored locally now")
-    elif "Version Not Supported" in get_reply.split("\r\n")[0]:
-        print(get_reply)
-    elif "Bad Request" in get_reply.split("\r\n")[0]:
-        print(get_reply)
+    elif "Version Not Supported" in get_reply_string.split("\r\n")[0]:
+        print(get_reply_string)
+    elif "Bad Request" in get_reply_string.split("\r\n")[0]:
+        print(get_reply_string)
 
     # Closing the socket connection
     requestPeerSocket.close()
@@ -196,13 +208,16 @@ while 1:
 
         # Receive the LOOKUP response from the server
         response_received = c_Socket.recv(1024)
-
+        print("response received ---- :", response_received)
+        response_received_string=response_received.decode("utf-8")
+        print("response received string ---- :", response_received_string)
         # Based on server response, verify the response for FILE NOT FOUND, BAD REQUEST or WRONG VERSION
-        split_data = response_received.split('\r\n')
+        split_data = response_received_string.split('\r\n')
 
         print("LOOKUP Response sent from the server")
+        print("SPLIT DATA ------", split_data)
 
-        if "404 Not Found" in split_data[0]:
+        if '404 Not Found' in split_data[0]:
             print(response_received)
         elif 'Version Not Supported' in split_data[0]:
             print(response_received)
@@ -258,5 +273,9 @@ while 1:
     #EXIT
     if user_input == "5":
         # just exit the program
+        client_message_1="EXIT"
+        info_lookup = pickle.dumps([client_message_1], -1)
+        c_Socket.send(info_lookup)
+        c_Socket.close()
         print("Shutting down client")
         break
