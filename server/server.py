@@ -163,7 +163,7 @@ def connection_handler(connectionsocket, addr):
                     connectionsocket.send(message_bytes)
         if host_name in current_peers:
             current_peers.pop(host_name, None)
-        for rfc in list_of_peers:
+        for rfc in list(list_of_peers):
             rfc_host_list = list_of_peers.get(rfc)
             if host_name in rfc_host_list:
                 if len(rfc_host_list) == 1:
