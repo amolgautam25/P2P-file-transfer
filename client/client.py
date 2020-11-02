@@ -9,7 +9,7 @@ import time
 import platform
 import _thread
 
-HOST = '192.168.1.207'  # The server's hostname or IP address
+HOST = '127.0.0.1'  # The server's hostname or IP address
 PORT = 7734  # The port used by the server
 
 def add_request(client_rfc_num, client_rfc_title):
@@ -54,7 +54,7 @@ def connection_handler():
         # Accept an incoming request for upload
         downloadSocket, downloadAddress = uploadSocket.accept()
         message = downloadSocket.recv(1024)
-        print("request message received -----", message)
+        # print("request message received -----", message)
         message_string=message.decode('utf-8')
         split_data = message_string.split("\r\n")
 
@@ -99,15 +99,15 @@ def connection_handler():
 
 
 def download_thread(req_message, peer_host_name, peer_port_number, rfc_number):
-    print ("peer_host_name",peer_host_name)
-    print("peer port number ", peer_port_number)
+    #print ("peer_host_name",peer_host_name)
+    #print("peer port number ", peer_port_number)
     # Connect to the upload server socket of the peer holding the required file
     requestPeerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     requestPeerSocket.connect((peer_host_name, int(peer_port_number)))
     print("Connection with peer established")
     req_message_bytes = req_message.encode('utf-8')
 
-    print("request message sent to client--------", req_message_bytes)
+    #print("request message sent to client--------", req_message_bytes)
 
     # Send the GET request to the peer
     requestPeerSocket.sendall(req_message_bytes)
@@ -116,7 +116,7 @@ def download_thread(req_message, peer_host_name, peer_port_number, rfc_number):
     get_reply = ""
     get_reply = requestPeerSocket.recv(1024)
     get_reply_string = get_reply.decode('utf-8')
-    print("get_reply_string ---------------------------------------", get_reply_string)
+    #print("get_reply_string ---------------------------------------", get_reply_string)
     if "P2P-CI/1.0 200 OK" in get_reply_string.split("\r\n")[0]:
         print("P2P-CI/1.0 200 OK")
         content_line = (get_reply_string.split("\r\n"))[4]
@@ -163,7 +163,11 @@ for file_name in os.listdir(rfc_storage_path):
         print (req_message)
         information_list = [req_message]
         info_add = pickle.dumps(information_list, -1)
-        print (info_add)
+        #print (info_add)
+        c_Socket.send(info_add)
+        response_received = c_Socket.recv(1024)
+        print("ADD Response sent from the server")
+        print(response_received.decode('utf-8'))
 
 _thread.start_new_thread(connection_handler,())
 
@@ -188,7 +192,7 @@ while 1:
             # Receive the response from server and print the same
             response_received = c_Socket.recv(1024)
             print("ADD Response sent from the server")
-            print(response_received)
+            print(response_received.decode('utf-8'))
         else:
             print("File Not Present in the directory")
 
@@ -208,14 +212,14 @@ while 1:
 
         # Receive the LOOKUP response from the server
         response_received = c_Socket.recv(1024)
-        print("response received ---- :", response_received)
+        # print("response received ---- :", response_received)
         response_received_string=response_received.decode("utf-8")
-        print("response received string ---- :", response_received_string)
+        # print("response received string ---- :", response_received_string)
         # Based on server response, verify the response for FILE NOT FOUND, BAD REQUEST or WRONG VERSION
         split_data = response_received_string.split('\r\n')
 
         print("LOOKUP Response sent from the server")
-        print("SPLIT DATA ------", split_data)
+        #print("SPLIT DATA ------", split_data)
 
         if '404 Not Found' in split_data[0]:
             print(response_received)
