@@ -36,15 +36,14 @@ def connection_handler(conn_socket, addr):
             break
         message_list = pickle.loads(message_received)
         #print(message_list)
-        print("Request received from the client")
-        print(message_list[0])
+        print("CLIENT REQUEST:\n", message_list[0])
 
         if message_list[0][0] == 'E':
             break
         else:
             server_message_split = message_list[0].split('\r\n')
             if "ADD" in server_message_split[0]:
-                if len(server_message_split) == 5 and "ADD" in server_message_split[0] and "Host" in \
+                if len(server_message_split) == 5 and "Host" in \
                         server_message_split[1] and "Port" in \
                         server_message_split[2] and "Title" in server_message_split[3]:
                     if 'P2P-CI/1.0' not in server_message_split[0]:
@@ -81,7 +80,7 @@ def connection_handler(conn_socket, addr):
                     message = "400 Bad Request\r\n"
                     conn_socket.send(message)
             elif "LIST" in server_message_split[0]:
-                if len(server_message_split) == 4 and "LIST" in server_message_split[0] and "Host" in server_message_split[1] and "Port" in \
+                if len(server_message_split) == 4 and "Host" in server_message_split[1] and "Port" in \
                         server_message_split[2]:
                     list_message_split = server_message_split[0].split()
                     host_message_split = server_message_split[1].split()
@@ -112,7 +111,7 @@ def connection_handler(conn_socket, addr):
                     message_bytes = bytes(message, 'utf-8')
                     conn_socket.send(message_bytes)
             elif "LOOKUP" in server_message_split[0]:
-                if len(server_message_split) == 5 and "LOOKUP" in server_message_split[0] and "Host" in server_message_split[1] and "Port" in \
+                if len(server_message_split) == 5 and "Host" in server_message_split[1] and "Port" in \
                         server_message_split[2] and "Title" in server_message_split[3]:
                     lookup_message_split = server_message_split[0].split()
                     host_message_split = server_message_split[1].split()
