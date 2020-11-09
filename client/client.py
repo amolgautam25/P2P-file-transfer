@@ -13,18 +13,6 @@ import sys
 server_host = sys.argv[1]
 server_port = int(sys.argv[2])
 
-c_Socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-c_Socket.connect((server_host, server_port))
-print('Connected to server!')
-
-#RFC_number:title
-rfc_number_title_map={}
-
-c_hostname = c_Socket.getsockname()[0]
-c_port = 60000 + random.randint(1, 100)
-c_Socket.send(pickle.dumps([c_port]))
-c_Socket.close
-
 def peer_conn():
     pr_socket = socket.socket()
     pr_socket.bind(('0.0.0.0', c_port))
@@ -90,6 +78,18 @@ def peer_conn_thread(req_message, peer_host_name, peer_port_number, rfc_number):
     p_socket.close()
 
 
+
+c_Socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+c_Socket.connect((server_host, server_port))
+print('Connected to server!')
+c_hostname = c_Socket.getsockname()[0]
+c_port = 60000 + random.randint(1, 100)
+c_Socket.send(pickle.dumps([c_port]))
+c_Socket.close
+
+
+#RFC_number:title
+rfc_number_title_map={}
 for f in os.listdir(os.getcwd()+"/rfc"):
     if 'rfc' in f:
         number=f[3:f.find(".")]
