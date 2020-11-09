@@ -58,23 +58,23 @@ def peer_conn_thread(req_message, peer_host_name, peer_port_number, rfc_number):
     #req_message_bytes =
     p_socket.sendall(req_message.encode('utf-8'))
 
-    #peer_response1 = ""
-    peer_response1 = p_socket.recv(1024)
-    peer_response = peer_response1.decode('utf-8')
-    peer_response_split = peer_response.split("\r\n")
-
-    if "P2P-CI/1.0 200 OK" in peer_response_split[0]:
-        print("P2P-CI/1.0 200 OK")
-        content_line = peer_response_split[4]
-        content_length = int(content_line.split(" ")[1])
-        peer_response = peer_response + p_socket.recv(content_length).decode('utf-8')
+    get_reply_bytes = ""
+    get_reply_bytes = p_socket.recv(1024)
+    peer_reply = get_reply_bytes.decode('utf-8')
+    if 'P2P-CI/1.0 200 OK' in peer_reply.split("\r\n")[0]:
+        print('P2P-CI/1.0 200 OK')
+        c_line = (peer_reply.split("\r\n"))[4]
+        c_length = int(c_line[c_line.find('Content-Length: ') + 16:])
+        peer_reply = peer_reply + p_socket.recv(c_length).decode('utf-8')
         r_filepath = os.getcwd() + "/rfc/rfc" + rfc_number + ".txt"
-        rfc_file_content = peer_response[12 + peer_response.find('text/plain\r\n') :]
+        peer_data = peer_reply[peer_reply.find('text/plain\r\n') + 12:]
+        # Writing the file data to a file
         with open(r_filepath, 'w') as file:
-            file.write(rfc_file_content)
-        print("File transfer completed")
-    elif "Version Not Supported" in peer_response_split[0] or "Bad Request" in peer_response_split[0]:
-        print(peer_response)
+            file.write(peer_data)
+        print('File Received from peer and stored locally now')
+    elif 'Version Not Supported' in peer_reply.split("\r\n")[0] or 'Bad Request' in peer_reply.split("\r\n")[0]:
+        print(peer_reply)
+    # Closing the socket connection
     p_socket.close()
 
 
