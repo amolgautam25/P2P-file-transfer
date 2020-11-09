@@ -29,140 +29,130 @@ def connection_handler(conn_socket, addr):
     ports_list = pickle.loads(conn_socket.recv(1024))
     clientHostname = addr[0] + ":" + str(ports_list[0])
     current_peers[clientHostname] = ports_list[0]
-    while 1:
-        message_received = conn_socket.recv(1024)
-        if not message_received:
+    while True:
+        client_msg = conn_socket.recv(1024)
+        if not client_msg:
             print("No messsage received!")
             break
-        message_list = pickle.loads(message_received)
-        #print(message_list)
-        print("CLIENT REQUEST:\n", message_list[0])
+        client_data = pickle.loads(client_msg)
+        #print(client_data)
+        print("CLIENT REQUEST:\n", client_data[0])
 
-        if message_list[0][0] == 'E':
+        if client_data[0] == 'EXIT':
             break
         else:
-            server_message_split = message_list[0].split('\r\n')
+            server_message_split = client_data[0].split('\r\n')
             if "ADD" in server_message_split[0]:
                 if len(server_message_split) == 5 and "Host" in \
                         server_message_split[1] and "Port" in \
                         server_message_split[2] and "Title" in server_message_split[3]:
                     if 'P2P-CI/1.0' not in server_message_split[0]:
-                        message = "505 P2P-CI Version Not Supported\r\n"
-                        conn_socket.send(message)
+                        conn_socket.send(str.encode("505 P2P-CI Version Not Supported\r\n"))
                     else:
                         add_message_split = server_message_split[0].split()
                         host_message_split = server_message_split[1].split()
                         port_message_split = server_message_split[2].split()
                         title_message_split = server_message_split[3].split()
 
-                        rfc_number = add_message_split[2]
-                        client_host_name = host_message_split[1]
-                        client_port_number = port_message_split[1]
-                        rfc_title = ' '.join(title_message_split[1:])
-                        p2p_version = add_message_split[3]
-                        cname = client_host_name + ":" + client_port_number
+                        add_rfc_num = add_message_split[2]
+                        add_rfc_title = ' '.join(title_message_split[1:])
+                        # p2p_version = add_message_split[3]
+                        cname = host_message_split[1] + ":" + port_message_split[1]
 
-                        if rfc_number not in rfc_list:
-                            rfc_list[rfc_number] = rfc_title
-                            list_of_peers[rfc_number] = [cname]
+                        if add_rfc_num not in rfc_list:
+                            rfc_list[add_rfc_num] = add_rfc_title
+                            list_of_peers[add_rfc_num] = [cname]
                         else:
-                            rfc_host_list = list_of_peers.get(rfc_number)
-                            rfc_host_list.append(cname)
-                            list_of_peers[rfc_number] = rfc_host_list
+                            #rfc_host_list = list_of_peers.get(add_rfc_num)
+                            #rfc_host_list.append(cname)
+                            list_of_peers[add_rfc_num].append(cname)
 
-                        message = "P2P-CI/1.0 200 OK\r\n" + server_message_split[1] + "\r\n" + server_message_split[
+                        msg = "P2P-CI/1.0 200 OK\r\n" + server_message_split[1] + "\r\n" + server_message_split[
                             2] + "\r\n" + \
                                   server_message_split[3] + "\r\n"
-                        conn_socket.send(str.encode(message))
-
-
+                        conn_socket.send(str.encode(msg))
                 else:
-                    message = "400 Bad Request\r\n"
-                    conn_socket.send(message)
+                    conn_socket.send(str.encode("400 Bad Request\r\n"))
+
             elif "LIST" in server_message_split[0]:
                 if len(server_message_split) == 4 and "Host" in server_message_split[1] and "Port" in \
                         server_message_split[2]:
                     list_message_split = server_message_split[0].split()
-                    host_message_split = server_message_split[1].split()
-                    port_message_split = server_message_split[2].split()
+                    # host_message_split = server_message_split[1].split()
+                    # port_message_split = server_message_split[2].split()
 
                     if 'P2P-CI/1.0' != list_message_split[2]:
-                        message = "505 P2P-CI Version Not Supported\r\n"
-                        message_bytes = bytes(message, 'utf-8')
-                        conn_socket.send(message_bytes)
+                        #message = "505 P2P-CI Version Not Supported\r\n"
+                        #message_bytes = bytes(message, 'utf-8')
+                        #conn_socket.send(message_bytes)
+                        conn_socket.send(str.encode("505 P2P-CI Version Not Supported\r\n"))
                     else:
-                        client_host_name = host_message_split[1]
-                        client_port_number = port_message_split[1]
+                        # client_host_name = host_message_split[1]
+                        # client_port_number = port_message_split[1]
                         if len(list_of_peers) == 0:
-                            message = "P2P-CI/1.0 404 Not Found\r\n"
+                            msg = "P2P-CI/1.0 404 Not Found\r\n"
                         else:
-                            message = "P2P-CI/1.0 200 OK"
+                            msg = "P2P-CI/1.0 200 OK\r\nFILE_TYPE RFC_NUM RFC_TITLE PEER PORT"
                             for rfc, value in list_of_peers.items():
-                                rfc_host_list = list_of_peers[rfc]
-                                for host in rfc_host_list:
-                                    temp = "rfc " + str(rfc) + " " + str(rfc_list.get(rfc)) + " " + str(
-                                        host[:host.find(":")]) + " " + str(current_peers.get(host))
-                                    message = message + "\r\n" + temp
-                            message = message + "\r\n"
-                        message_bytes = bytes(message, 'utf-8')
-                        conn_socket.send(message_bytes)
+                                #rfc_host_list = list_of_peers[rfc]
+                                for host in value:
+                                    msg = msg + "\r\n" + "rfc " + str(rfc) + " " + str(rfc_list.get(rfc)) + " " + str(
+                                        host.split(':')[0]) + " " + str(current_peers.get(host))
+                            msg = msg + "\r\n"
+                        conn_socket.send(str.encode(msg))
                 else:
-                    message = "400 Bad Request\r\n"
-                    message_bytes = bytes(message, 'utf-8')
-                    conn_socket.send(message_bytes)
+                    #message = "400 Bad Request\r\n"
+                    #message_bytes = bytes(message, 'utf-8')
+                    #conn_socket.send(message_bytes)
+                    conn_socket.send(str.encode("400 Bad Request\r\n"))
+
             elif "LOOKUP" in server_message_split[0]:
                 if len(server_message_split) == 5 and "Host" in server_message_split[1] and "Port" in \
                         server_message_split[2] and "Title" in server_message_split[3]:
                     lookup_message_split = server_message_split[0].split()
-                    host_message_split = server_message_split[1].split()
-                    port_message_split = server_message_split[2].split()
+                    # host_message_split = server_message_split[1].split()
+                    # port_message_split = server_message_split[2].split()
                     title_message_split = server_message_split[3].split()
 
                     if 'P2P-CI/1.0' != lookup_message_split[3]:
-                        message = "505 P2P-CI Version Not Supported\r\n"
-                        message_bytes = bytes(message, 'utf-8')
-                        conn_socket.send(message_bytes)
+                        #message = "505 P2P-CI Version Not Supported\r\n"
+                        #message_bytes = bytes(message, 'utf-8')
+                        #conn_socket.send(message_bytes)
+                        conn_socket.send(str.encode("505 P2P-CI Version Not Supported\r\n"))
                     else:
-                        rfc_number = lookup_message_split[2]
-                        client_host_name = host_message_split[1]
-                        client_port_number = port_message_split[1]
+                        lookup_rfc_num = lookup_message_split[2]
+                        # client_host_name = host_message_split[1]
+                        # client_port_number = port_message_split[1]
                         rfc_title = ' '.join(title_message_split[1:])
-                        if rfc_number in rfc_list and rfc_list[rfc_number] == rfc_title:
-                            message = "P2P-CI/1.0 200 OK"
-                            rfc_host_list = list_of_peers.get(rfc_number)
+
+                        if lookup_rfc_num in rfc_list and rfc_list[lookup_rfc_num] == rfc_title:
+                            msg = "P2P-CI/1.0 200 OK"
+                            rfc_host_list = list_of_peers.get(lookup_rfc_num)
                             for host in rfc_host_list:
-                                temp = "RFC " + str(rfc_number) + " " + str(rfc_title) + " " + str(
-                                    host[:host.find(":")]) + " " + str(current_peers.get(host))
-
-                                message = message + "\r\n" + temp
-                            message = message + "\r\n"
-                            message_bytes = bytes(message, 'utf-8')
-                            conn_socket.send(message_bytes)
+                                msg = msg + "\r\n" + "RFC " + str(lookup_rfc_num) + " " + str(rfc_title) + " " + str(
+                                    host.split(':')[0]) + " " + str(current_peers.get(host))
+                            msg = msg + "\r\n"
+                            conn_socket.send(str.encode(msg))
                         else:
-                            message = "P2P-CI/1.0 404 Not Found\r\n"
-                            message_bytes = bytes(message, 'utf-8')
-                            conn_socket.send(message_bytes)
-
-
+                            conn_socket.send(str.encode("P2P-CI/1.0 404 Not Found\r\n"))
                 else:
-                    message = "400 Bad Request\r\n"
-                    message_bytes = bytes(message, 'utf-8')
-                    conn_socket.send(message_bytes)
+                    conn_socket.send(str.encode("400 Bad Request\r\n"))
+
     if clientHostname in current_peers:
         current_peers.pop(clientHostname, None)
     for rfc in list(list_of_peers):
         rfc_host_list = list_of_peers.get(rfc)
         if clientHostname in rfc_host_list:
-            if len(rfc_host_list) == 1:
-                rfc_list.pop(rfc, None)
-                list_of_peers.pop(rfc, None)
-            else:
+            if len(rfc_host_list) != 1:
                 rfc_host_list.remove(clientHostname)
                 list_of_peers[rfc] = rfc_host_list
+            else:
+                rfc_list.pop(rfc, None)
+                list_of_peers.pop(rfc, None)
     conn_socket.close()
 
 while 1:
-    conn_socket, addr = ssocket.accept()
-    print("Client " + addr[0] + " connected. \n")
-    _thread.start_new_thread(connection_handler, (conn_socket, addr))
+    conn_socket, address = ssocket.accept()
+    print("Client " + address[0] + " connected. \n")
+    _thread.start_new_thread(connection_handler, (conn_socket, address))
 ssocket.close()
