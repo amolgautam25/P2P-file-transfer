@@ -45,6 +45,7 @@ def peer_conn():
                     print('press Enter to continue')
         else:
             peer_socket.send(str.encode("400 Bad Request\r\n"))
+            print('press Enter to continue')
 
 def peer_conn_thread(req_message, peer_host_name, peer_port_number, rfc_number):
     p_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -66,6 +67,7 @@ def peer_conn_thread(req_message, peer_host_name, peer_port_number, rfc_number):
         print('press ENTER to continue')
     elif 'Version Not Supported' in prsplit[0] or 'Bad Request' in prsplit[0]:
         print(pr)
+        print('press Enter to continue')
     p_socket.close()
 
 def keyboardInterruptHandler(signal, frame):
