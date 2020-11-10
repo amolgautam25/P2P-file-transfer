@@ -134,7 +134,7 @@ while 1:
         else:
             print(receivedData.decode('utf-8'))
             get_message_split = get_message_split[1].split(" ")
-            req_message =  message = "GET RFC " + str(get_rfc_num) + " P2P-CI/1.0\r\n" \
+            req_message  = "GET RFC " + str(get_rfc_num) + " P2P-CI/1.0\r\n" \
                                                  "Host: " + str(c_hostname) + "\r\n" \
                                                                               "OS: " + platform.platform() + "\r\n"
             print("GET REQUEST - TO THE PEER WITH RFC:\n", req_message)
