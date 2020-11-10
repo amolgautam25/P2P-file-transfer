@@ -107,7 +107,7 @@ while 1:
         add_rfc_title) + "\r\n"
             print("\nADD REQUEST - TO THE SERVER:\n", client_message_1)
             c_Socket.send(pickle.dumps([client_message_1], -1))
-            m_data = c_Socket.recv(1024)
+            receivedData = c_Socket.recv(1024)
             print("RESPONSE TO ADD REQUEST:\n", receivedData.decode('utf-8'))
         else:
             print("File not found!")
