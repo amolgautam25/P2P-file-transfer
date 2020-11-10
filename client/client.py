@@ -50,20 +50,18 @@ def peer_conn_thread(req_message, peer_host_name, peer_port_number, rfc_number):
     print("\nPEER CONNECTION ESTABLISHED\n")
     p_socket.sendall(req_message.encode('utf-8'))
 
-    get_reply_bytes = ""
     get_reply_bytes = p_socket.recv(1024)
     pr = get_reply_bytes.decode('utf-8')
-    if 'P2P-CI/1.0 200 OK' in pr.split("\r\n")[0]:
+    prsplit = pr.split("\r\n")
+    if 'P2P-CI/1.0 200 OK' in prsplit[0]:
         print('P2P-CI/1.0 200 OK')
-        c_line = (pr.split("\r\n"))[4]
-        c_length = int(c_line.split(" ")[1])
+        c_length = int(prsplit[4].split(" ")[1])
         pr = pr + p_socket.recv(c_length).decode('utf-8')
-        r_filepath = os.getcwd() + "/rfc/rfc" + rfc_number + ".txt"
         peer_data = pr[12 + pr.find('text/plain\r\n') :]
-        with open(r_filepath, 'w') as file:
+        with open(os.getcwd() + "/rfc/rfc" + rfc_number + ".txt", 'w') as file:
             file.write(peer_data)
         print('File Received!')
-    elif 'Version Not Supported' in pr.split("\r\n")[0] or 'Bad Request' in pr.split("\r\n")[0]:
+    elif 'Version Not Supported' in prsplit[0] or 'Bad Request' in prsplit[0]:
         print(pr)
     p_socket.close()
 
@@ -72,7 +70,7 @@ c_Socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 c_Socket.connect((server_host, server_port))
 print('Connected to server!')
 c_hostname = c_Socket.getsockname()[0]
-c_port = 60000 + random.randint(1, 100)
+c_port = 60000 + random.randint(1, 5000)
 c_Socket.send(pickle.dumps([c_port]))
 #c_Socket.close
 
@@ -90,8 +88,8 @@ for f in os.listdir(os.getcwd()+"/rfc"):
         rfc_number_title_map[number]) + "\r\n"
         print ("ADD REQUEST - TO THE SERVER:\n", req_message)
         c_Socket.send(pickle.dumps([req_message], -1))
-        response_received = c_Socket.recv(1024)
-        print("RESPONSE TO ADD REQUEST:\n", response_received.decode('utf-8'))
+        receivedData = c_Socket.recv(1024)
+        print("RESPONSE TO ADD REQUEST:\n", receivedData.decode('utf-8'))
 _thread.start_new_thread(peer_conn,())
 
 while 1:
@@ -99,48 +97,48 @@ while 1:
 
     #ADD
     if user_input == "1":
-        rfc_num = input("Input RFC number: ")
-        rfc_title = input("Input RFC title: ")
-        if os.path.isfile(os.getcwd() + "/rfc/rfc" + rfc_num + ".txt"):
-            client_message_1 = "ADD RFC " + str(rfc_num) + " P2P-CI/1.0\r\n" \
+        add_rfc_num = input("Input RFC number: ")
+        add_rfc_title = input("Input RFC title: ")
+        if os.path.isfile(os.getcwd() + "/rfc/rfc" + add_rfc_num + ".txt"):
+            client_message_1 = "ADD RFC " + str(add_rfc_num) + " P2P-CI/1.0\r\n" \
                                                  "Host: " + str(c_hostname) + "\r\n" \
                                                                               "Port: " + str(c_port) + "\r\n" \
                                                                                                        "Title: " + str(
-        rfc_title) + "\r\n"
+        add_rfc_title) + "\r\n"
             print("\nADD REQUEST - TO THE SERVER:\n", client_message_1)
             c_Socket.send(pickle.dumps([client_message_1], -1))
-            response_received = c_Socket.recv(1024)
-            print("RESPONSE TO ADD REQUEST:\n", response_received.decode('utf-8'))
+            m_data = c_Socket.recv(1024)
+            print("RESPONSE TO ADD REQUEST:\n", receivedData.decode('utf-8'))
         else:
             print("File not found!")
 
     #GET
     if user_input == "2":
-        rfc_num = input("Input RFC number: ")
-        rfc_title = input("Input RFC title: ")
+        get_rfc_num = input("Input RFC number: ")
+        get_rfc_title = input("Input RFC title: ")
 
-        req_message = "LOOKUP RFC " + str(rfc_num) + " P2P-CI/1.0\r\n" \
+        req_message = "LOOKUP RFC " + str(get_rfc_num) + " P2P-CI/1.0\r\n" \
                                                     "Host: " + str(c_hostname) + "\r\n" \
                                                                                  "Port: " + str(c_port) + "\r\n" \
                                                                                                           "Title: " + str(
-        rfc_title) + "\r\n"
+        get_rfc_title) + "\r\n"
         print("\nLOOKUP REQUEST - TO THE SERVER:\n", req_message)
         c_Socket.sendall(pickle.dumps([req_message], -1))
-        response_received = c_Socket.recv(1024)
-        response_received_string=response_received.decode("utf-8")
+        receivedData = c_Socket.recv(1024)
+        response_received_string=receivedData.decode("utf-8")
         get_message_split = response_received_string.split('\r\n')
         print("RESPONSE TO LOOKUP REQUEST:\n")
         if '404 Not Found' in get_message_split[0] or 'Version Not Supported' in get_message_split[0] or 'Bad Request' in get_message_split[
             0]:
-            print(response_received.decode('utf-8'))
+            print(receivedData.decode('utf-8'))
         else:
-            print(response_received.decode('utf-8'))
+            print(receivedData.decode('utf-8'))
             get_message_split = get_message_split[1].split(" ")
-            req_message =  message = "GET RFC " + str(rfc_num) + " P2P-CI/1.0\r\n" \
+            req_message =  message = "GET RFC " + str(get_rfc_num) + " P2P-CI/1.0\r\n" \
                                                  "Host: " + str(c_hostname) + "\r\n" \
                                                                               "OS: " + platform.platform() + "\r\n"
             print("GET REQUEST - TO THE PEER WITH RFC:\n", req_message)
-            _thread.start_new_thread(peer_conn_thread, (req_message, get_message_split[3], get_message_split[4], rfc_num))
+            _thread.start_new_thread(peer_conn_thread, (req_message, get_message_split[3], get_message_split[4], get_rfc_num))
 
     #LIST
     if user_input == "3":
@@ -149,22 +147,22 @@ while 1:
                                            "Port: " + str(c_port) + "\r\n"
         print("LIST REQUEST - TO THE SERVER\n", client_message_1)
         c_Socket.send(pickle.dumps([client_message_1], -1))
-        response_received = c_Socket.recv(1024)
-        print("RESPONSE TO LIST REQUEST:\n", response_received.decode('utf-8'))
+        receivedData = c_Socket.recv(1024)
+        print("RESPONSE TO LIST REQUEST:\n", receivedData.decode('utf-8'))
 
     #lookup
     if user_input == "4":
-        rfc_num = input("Input RFC number: ")
-        rfc_title = input("Input RFC title: ")
-        client_message_1 = req_message = "LOOKUP RFC " + str(rfc_num) + " P2P-CI/1.0\r\n" \
+        lookup_rfc_num = input("Input RFC number: ")
+        lookup_rfc_title = input("Input RFC title: ")
+        client_message_1 = req_message = "LOOKUP RFC " + str(lookup_rfc_num) + " P2P-CI/1.0\r\n" \
                                                     "Host: " + str(c_hostname) + "\r\n" \
                                                                                  "Port: " + str(c_port) + "\r\n" \
                                                                                                           "Title: " + str(
-        rfc_title) + "\r\n"
+        lookup_rfc_title) + "\r\n"
         print("LOOKUP REQUEST:\n", client_message_1)
         c_Socket.send(pickle.dumps([client_message_1], -1))
-        response_received = c_Socket.recv(1024)
-        print("RESPONSE TO LOOKUP RESPONSE:\n", response_received.decode('utf-8'))
+        receivedData = c_Socket.recv(1024)
+        print("RESPONSE TO LOOKUP RESPONSE:\n", receivedData.decode('utf-8'))
 
     #EXIT
     if user_input == "5":
