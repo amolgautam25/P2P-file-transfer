@@ -9,6 +9,7 @@ import time
 import platform
 import _thread
 import sys
+import signal
 
 server_host = sys.argv[1]
 server_port = int(sys.argv[2])
@@ -65,13 +66,21 @@ def peer_conn_thread(req_message, peer_host_name, peer_port_number, rfc_number):
         print(pr)
     p_socket.close()
 
+def keyboardInterruptHandler(signal, frame):
+    print("KeyboardInterrupt has been caught. Cleaning up!")
+    c_Socket.close()
+    exit(0)
+
+signal.signal(signal.SIGINT, keyboardInterruptHandler)
 
 c_Socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 c_Socket.connect((server_host, server_port))
 print('Connected to server!')
 c_hostname = c_Socket.getsockname()[0]
 c_port = 60000 + random.randint(1, 5000)
-c_Socket.send(pickle.dumps([c_port]))
+#r = [c_port]
+#cp = pickle.dumps(r)
+#c_Socket.send(cp)
 #c_Socket.close
 
 
@@ -87,7 +96,7 @@ for f in os.listdir(os.getcwd()+"/rfc"):
                                                                                                        "Title: " + str(
         rfc_number_title_map[number]) + "\r\n"
         print ("ADD REQUEST - TO THE SERVER:\n", req_message)
-        c_Socket.send(pickle.dumps([req_message], -1))
+        c_Socket.send(pickle.dumps([req_message, c_port], -1))
         receivedData = c_Socket.recv(1024)
         print("RESPONSE TO ADD REQUEST:\n", receivedData.decode('utf-8'))
 _thread.start_new_thread(peer_conn,())
@@ -106,7 +115,7 @@ while 1:
                                                                                                        "Title: " + str(
         add_rfc_title) + "\r\n"
             print("\nADD REQUEST - TO THE SERVER:\n", client_message_1)
-            c_Socket.send(pickle.dumps([client_message_1], -1))
+            c_Socket.send(pickle.dumps([client_message_1, c_port], -1))
             receivedData = c_Socket.recv(1024)
             print("RESPONSE TO ADD REQUEST:\n", receivedData.decode('utf-8'))
         else:
@@ -123,7 +132,7 @@ while 1:
                                                                                                           "Title: " + str(
         get_rfc_title) + "\r\n"
         print("\nLOOKUP REQUEST - TO THE SERVER:\n", req_message)
-        c_Socket.sendall(pickle.dumps([req_message], -1))
+        c_Socket.sendall(pickle.dumps([req_message, c_port], -1))
         receivedData = c_Socket.recv(1024)
         response_received_string=receivedData.decode("utf-8")
         get_message_split = response_received_string.split('\r\n')
@@ -146,7 +155,7 @@ while 1:
               "Host: " + str(c_hostname) + "\r\n" \
                                            "Port: " + str(c_port) + "\r\n"
         print("LIST REQUEST - TO THE SERVER\n", client_message_1)
-        c_Socket.send(pickle.dumps([client_message_1], -1))
+        c_Socket.send(pickle.dumps([client_message_1, c_port], -1))
         receivedData = c_Socket.recv(1024)
         print("RESPONSE TO LIST REQUEST:\n", receivedData.decode('utf-8'))
 
@@ -160,15 +169,14 @@ while 1:
                                                                                                           "Title: " + str(
         lookup_rfc_title) + "\r\n"
         print("LOOKUP REQUEST:\n", client_message_1)
-        c_Socket.send(pickle.dumps([client_message_1], -1))
+        c_Socket.send(pickle.dumps([client_message_1, c_port], -1))
         receivedData = c_Socket.recv(1024)
         print("RESPONSE TO LOOKUP RESPONSE:\n", receivedData.decode('utf-8'))
 
     #EXIT
     if user_input == "5":
         client_message_1 = "EXIT"
-        c_Socket.send(pickle.dumps([client_message_1], -1))
+        c_Socket.send(pickle.dumps([client_message_1, c_port], -1))
         c_Socket.close()
         print("SHUTTING DOWN CLIENT")
         break
-

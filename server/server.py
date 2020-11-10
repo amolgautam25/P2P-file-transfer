@@ -3,6 +3,7 @@
 import socket
 import _thread
 import pickle
+import signal
 
 HOST = '127.0.0.1'
 PORT = 7734
@@ -25,20 +26,25 @@ rfc_list = {}
 current_peers = {}
 
 def connection_handler(conn_socket, addr):
-    ports_list = pickle.loads(conn_socket.recv(1024))
-    clientHostname = addr[0] + ":" + str(ports_list[0])
-    current_peers[clientHostname] = ports_list[0]
+
     while True:
         client_msg = conn_socket.recv(1024)
         if not client_msg:
             print("No messsage received!")
             break
         client_data = pickle.loads(client_msg)
+
+        clientHostname = addr[0] + ":" + str(client_data[1])
+        if clientHostname not in current_peers:
+            current_peers[clientHostname] = client_data[1]
+        #print(current_peers)
+
         print("CLIENT REQUEST:\n", client_data[0])
 
         if client_data[0] == 'EXIT':
             break
         else:
+            #print("-------------",client_data)
             server_message_split = client_data[0].split('\r\n')
             if "ADD" in server_message_split[0]:
                 if len(server_message_split) == 5 and "Host" in \
@@ -128,8 +134,16 @@ def connection_handler(conn_socket, addr):
                 list_of_peers.pop(rfc, None)
     conn_socket.close()
 
+def keyboardInterruptHandler(signal, frame):
+    print("KeyboardInterrupt has been caught. Cleaning up!")
+    ssocket.close()
+    exit(0)
+
+
+signal.signal(signal.SIGINT, keyboardInterruptHandler)
+
 while 1:
     conn_socket, address = ssocket.accept()
     print("Client " + address[0] + " connected. \n")
     _thread.start_new_thread(connection_handler, (conn_socket, address))
-ssocket.close()
+
