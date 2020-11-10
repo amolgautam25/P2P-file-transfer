@@ -42,6 +42,7 @@ def peer_conn():
                     print(peer_reply)
                     peer_reply = peer_reply + rfc_file_data
                     peer_socket.sendall(peer_reply.encode('utf-8'))
+                    print('press Enter to continue')
         else:
             peer_socket.send(str.encode("400 Bad Request\r\n"))
 
@@ -62,6 +63,7 @@ def peer_conn_thread(req_message, peer_host_name, peer_port_number, rfc_number):
         with open(os.getcwd() + "/rfc/rfc" + rfc_number + ".txt", 'w') as file:
             file.write(peer_data)
         print('File Received!')
+        print('press ENTER to continue')
     elif 'Version Not Supported' in prsplit[0] or 'Bad Request' in prsplit[0]:
         print(pr)
     p_socket.close()

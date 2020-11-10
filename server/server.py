@@ -26,7 +26,7 @@ rfc_list = {}
 current_peers = {}
 
 def connection_handler(conn_socket, addr):
-
+    clientHostname=""
     while True:
         client_msg = conn_socket.recv(1024)
         if not client_msg:
